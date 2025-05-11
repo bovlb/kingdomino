@@ -1,6 +1,56 @@
 <script lang="ts">
     import { afterUpdate } from "svelte";
+    import Editor from './Editor.svelte';
+  import { longpress } from './lib/longpress';
+ 
+  import { onMount, onDestroy } from 'svelte';
 
+  let isDragging = false;
+  let dragTerrain: Terrain | null = null;
+  let castleDragStart: { row: number; col: number } | null = null;
+
+  onMount(() => {
+    function stopDrag() {
+      isDragging = false;
+      dragTerrain = null;
+      castleDragStart = null;
+    }
+
+    window.addEventListener('pointerup', stopDrag);
+    window.addEventListener('pointercancel', stopDrag);
+
+    onDestroy(() => {
+      window.removeEventListener('pointerup', stopDrag);
+      window.removeEventListener('pointercancel', stopDrag);
+    });
+  });
+
+  // Optional debugging aid
+  // $: console.log("isDragging:", isDragging, "dragTerrain:", dragTerrain, "castleDragStart:", castleDragStart);
+
+
+// track editor state
+let showEditor = false;
+let editingTile: Tile | null = null;
+let editingRow = 0;
+let editingCol = 0;
+let editorX = 0;
+let editorY = 0;
+
+function openEditorAt(tile: Tile, row: number, col: number, event: PointerEvent) {
+  if (isCastle(row, col)) return;
+  editingTile = tile;
+  showEditor = true;
+  editorX = event.clientX;
+  editorY = event.clientY;
+}
+
+function updateTile(updates: Partial<Tile>) {
+  if (editingTile) {
+    Object.assign(editingTile, updates);
+    board = [...board]; // trigger reactivity
+  }
+}
   const terrainTypes = ['grass', 'water', 'forest', 'desert', 'swamp', 'mine'] as const;
   type Terrain = typeof terrainTypes[number];
 
@@ -19,10 +69,6 @@
 
   let castle = { row: 6, col: 6 }; // always inside full grid
 
-  let isDragging = false;
-  let dragTerrain: Terrain | null = null;
-
-  let castleDragStart: { row: number; col: number } | null = null;
 
 function beginDrag(tile: Tile, row: number, col: number) {
   if (isCastle(row, col)) {
@@ -334,7 +380,12 @@ function tryToggleViewportSize() {
         on:pointerdown={(e) => beginDrag(tile, row, col)}
         on:pointerenter={() => applyDrag(tile, row, col)}
         on:pointerup={() => endDrag(row, col)}
-      >
+        use:longpress={(e) => openEditorAt(tile, row, col, e)}
+        on:contextmenu={(e) => {
+          e.preventDefault();
+          openEditorAt(tile, row, col, e);
+        }}
+        >
         {tile.crowns > 0 ? tile.crowns : ''}
       </button>
     {/each}
@@ -346,3 +397,16 @@ function tryToggleViewportSize() {
     Board Size: {viewportSize}×{viewportSize}
   </button>
 </p>
+
+{#if showEditor}
+  <Editor
+    tile={editingTile}
+    x={editorX}
+    y={editorY}
+    on:close={() => showEditor = false}
+    onUpdate={(updates) => {
+      updateTile(updates);
+      showEditor = false;
+    }}
+  />
+{/if}
