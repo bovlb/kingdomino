@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import sveltePreprocess from 'svelte-preprocess';
 
 export default defineConfig({
+  base: '/kingdomino/',
   plugins: [svelte({
     preprocess: sveltePreprocess()
   }),
