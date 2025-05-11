@@ -328,6 +328,18 @@ function tryToggleViewportSize() {
 </script>
 
 <style>
+.board {
+  touch-action: none;
+}
+.tile {
+  touch-action: none;
+}
+
+html, body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
   .board {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
