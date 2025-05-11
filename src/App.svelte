@@ -462,9 +462,9 @@ function log(msg: string) {
   display: grid;
   grid-template-columns: repeat(var(--board-size), 1fr);
   gap: 2px;
-  width: 100%;
-  max-width: 100%;
-  margin: auto;
+  width: 80vw;             /* Slightly smaller than viewport */
+  /* max-width: 500px;        Optional cap for desktop */
+  margin: 0 auto;
 }
 
 .tile {
