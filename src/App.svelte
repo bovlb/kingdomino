@@ -2,6 +2,7 @@
   import { afterUpdate } from "svelte";
 
   import { onMount, onDestroy } from "svelte";
+  import { score } from './lib/scoring';
 
   let debugLog: string[] = [];
 
@@ -136,7 +137,11 @@ function log(msg: string) {
 
   function update() {
     board = [...board];
-    totalScore = score();
+    const scores = score(board, castle, viewportOrigin, viewportSize);
+    totalScore = scores.total;
+    hasMiddleKingdom = scores.middleKingdom;
+    hasHarmony = scores.harmony;
+    terrainScore = scores.terrain;
   }
 
   function handlePointerMove(e: PointerEvent) {
@@ -176,7 +181,7 @@ function log(msg: string) {
   if (pendingCrown !== null) {
     console.log("applySelection: crown", pendingCrown);
     tile.crowns = pendingCrown;
-    pendingCrown = null;
+    // pendingCrown = null;
   } else {
     console.log("applySelection: terrain", selectedTerrain);
     tile.terrain = selectedTerrain === "empty" ? null : selectedTerrain;
@@ -187,98 +192,6 @@ function log(msg: string) {
 
   function isCastle(row: number, col: number) {
     return row === castle.row && col === castle.col;
-  }
-
-  function qualifiesMiddleKingdom(): boolean {
-    const { minRow, maxRow, minCol, maxCol } = boundingBox();
-    const centerRow = Math.floor((minRow + maxRow) / 2);
-    const centerCol = Math.floor((minCol + maxCol) / 2);
-    const castleInCentre = castle.row === centerRow && castle.col === centerCol;
-    const boxFits =
-      maxRow - minRow + 1 === viewportSize &&
-      maxCol - minCol + 1 === viewportSize;
-    return castleInCentre && boxFits;
-  }
-
-  function qualifiesHarmony(): boolean {
-    const { minRow, maxRow, minCol, maxCol } = boundingBox();
-
-    // Check bounding box fits exactly in viewport
-    const boxFits =
-      maxRow - minRow + 1 === viewportSize &&
-      maxCol - minCol + 1 === viewportSize;
-
-    // Check all tiles are filled (castle excluded)
-    for (
-      let r = viewportOrigin.row;
-      r < viewportOrigin.row + viewportSize;
-      r++
-    ) {
-      for (
-        let c = viewportOrigin.col;
-        c < viewportOrigin.col + viewportSize;
-        c++
-      ) {
-        if (
-          (r !== castle.row || c !== castle.col) &&
-          board[r][c].terrain === null
-        ) {
-          return false;
-        }
-      }
-    }
-
-    return boxFits;
-  }
-
-  function score(): number {
-    const visited = Array.from({ length: gridSize }, () =>
-      Array(gridSize).fill(false),
-    );
-    let total = 0;
-
-    function dfs(r: number, c: number, terrain: Terrain): [number, number] {
-      if (
-        r < 0 ||
-        r >= gridSize ||
-        c < 0 ||
-        c >= gridSize ||
-        visited[r][c] ||
-        board[r][c].terrain !== terrain
-      )
-        return [0, 0];
-
-      visited[r][c] = true;
-      let size = 1;
-      let crowns = board[r][c].crowns;
-
-      for (const [dr, dc] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ]) {
-        const [s, cr] = dfs(r + dr, c + dc, terrain);
-        size += s;
-        crowns += cr;
-      }
-
-      return [size, crowns];
-    }
-
-    for (let r = 0; r < gridSize; r++) {
-      for (let c = 0; c < gridSize; c++) {
-        const tile = board[r][c];
-        if (tile.terrain && !visited[r][c]) {
-          const [size, crowns] = dfs(r, c, tile.terrain);
-          total += size * crowns;
-        }
-      }
-    }
-    total += qualifiesMiddleKingdom() ? 10 : 0;
-    total += qualifiesHarmony() ? 5 : 0;
-
-    return total;
   }
 
   function boundingBox(): {
@@ -307,18 +220,6 @@ function log(msg: string) {
     return { minRow, maxRow, minCol, maxCol };
   }
 
-  function isWithinViewport(): boolean {
-    const { minRow, maxRow, minCol, maxCol } = boundingBox();
-    return (
-      maxRow - minRow + 1 <= viewportSize && maxCol - minCol + 1 <= viewportSize
-    );
-  }
-  type ViewportTile = {
-    tile: Tile;
-    row: number;
-    col: number;
-  };
-
   $: visibleTiles = Array.from({ length: viewportSize }, (_, dr) =>
     Array.from({ length: viewportSize }, (_, dc) => {
       const row = viewportOrigin.row + dr;
@@ -332,6 +233,9 @@ function log(msg: string) {
   );
 
   let totalScore = 0;
+  let hasMiddleKingdom = false;
+  let hasHarmony = false;
+  let terrainScore = 0;
 
   function tryToggleViewportSize() {
     if (viewportSize === 5) {
@@ -420,7 +324,13 @@ function log(msg: string) {
 </div>
 
 <p style="text-align: center; font-size: 1.2rem;">
-  Total Score: <strong>{totalScore}</strong>
+    Total Score: <strong>{totalScore}</strong>
+    <span style="margin-left: 1rem;">
+      {#if hasMiddleKingdom}🏰 Middle Kingdom +10{/if}
+    </span>
+    <span style="margin-left: 1rem;">
+      {#if hasHarmony}🎯 Harmony +5{/if}
+    </span>
   <button on:click={() => tryToggleViewportSize()} style="margin-left: 20px;">
     Board Size: {viewportSize}×{viewportSize}
   </button>
@@ -555,7 +465,7 @@ function log(msg: string) {
     font-size: 1.2rem;
     cursor: pointer;
     background: white;
-    min-width: 100px;
+    /* min-width: 100px; */
   }
 
   button.selected {
