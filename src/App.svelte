@@ -14,25 +14,56 @@
 
   let castle = { row: 2, col: 2 };
 
+  let isDragging = false;
+  let dragTerrain: Terrain | null = null;
+
+  function beginDrag(tile: Tile, row: number, col: number) {
+    if (isCastle(row, col)) {
+      startCastleDrag(row, col);
+    } else if (tile.terrain) {
+      isDragging = true;
+      dragTerrain = tile.terrain;
+    }
+  }
+
+  function applyDrag(tile: Tile, row: number, col: number) {
+    if (isCastle(row, col)) return;
+    if (isDragging && dragTerrain !== null) {
+      tile.terrain = dragTerrain;
+      board = [...board]; // force reactivity
+    }
+  }
+
+  function endDrag() {
+    isDragging = false;
+    dragTerrain = null;
+  }
+
   function cycleTerrain(tile: Tile) {
     const index = terrainTypes.indexOf(tile.terrain as Terrain);
     tile.terrain = terrainTypes[(index + 1) % terrainTypes.length];
+    board = board; // Trigger reactivity
   }
 
   function cycleCrowns(tile: Tile) {
     tile.crowns = (tile.crowns + 1) % 4; // 0-3 crowns
+    board = board; // Trigger reactivity
   }
 
-  let lastTapTime = 0;
+  let tapTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  function handleTap(tile: Tile, event: MouseEvent) {
-    const now = Date.now();
-    if (now - lastTapTime < 300) {
-      cycleCrowns(tile);
+  function handleTap(tile: Tile, row: number, col: number) {
+    if (isCastle(row, col)) return;
+    if (tapTimeout) {
+      clearTimeout(tapTimeout);
+      tapTimeout = null;
+      cycleCrowns(tile, row, col); // Double tap
     } else {
-      cycleTerrain(tile);
+      tapTimeout = setTimeout(() => {
+        cycleTerrain(tile, row, col); // Single tap
+        tapTimeout = null;
+      }, 250);
     }
-    lastTapTime = now;
   }
 
   function isCastle(row: number, col: number) {
@@ -89,41 +120,52 @@
     margin: auto;
   }
 
-  .tile {
-    aspect-ratio: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    user-select: none;
-    touch-action: manipulation;
-    border: 1px solid #ccc;
-    font-size: 1.2rem;
-  }
+.tile {
+  aspect-ratio: 1;
+  width: 100%;
+  font-weight: bold;
+  user-select: none;
+  touch-action: manipulation;
+  border: 1px solid #ccc;
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
 
-  .castle {
-    border: 3px solid black;
-  }
+.grass { background-color: lightgreen; }
+.water { background-color: lightblue; }
+.forest { background-color: darkgreen; color: white; }
+.desert { background-color: khaki; }
+.swamp { background-color: mediumseagreen; }
+.mine { background-color: gray; color: white; }
 
-  .grass { background: lightgreen; }
-  .water { background: lightblue; }
-  .forest { background: darkgreen; color: white; }
-  .desert { background: khaki; }
-  .swamp { background: mediumseagreen; }
-  .mine { background: gray; color: white; }
+.castle {
+  border: 3px solid black;
+}
 </style>
 
 <h1 style="text-align: center;">Kingdomino Scorer</h1>
-
 <div class="board">
   {#each board as row, r}
     {#each row as tile, c}
-      <div
-        class="tile {tile.terrain} {isCastle(r, c) ? 'castle' : ''}"
+      <button
+        class="tile"
+        class:grass={tile.terrain === 'grass'}
+        class:water={tile.terrain === 'water'}
+        class:forest={tile.terrain === 'forest'}
+        class:desert={tile.terrain === 'desert'}
+        class:swamp={tile.terrain === 'swamp'}
+        class:mine={tile.terrain === 'mine'}
+        class:castle={isCastle(r, c)}
+        on:pointerdown={(e) => beginDrag(tile)}
+        on:pointerenter={() => applyDrag(tile, r, c)}
+        on:pointerup={() => endDrag()}
         on:click={(e) => handleTap(tile, e)}
       >
         {tile.crowns > 0 ? tile.crowns : ''}
-      </div>
+      </button>
     {/each}
   {/each}
 </div>
