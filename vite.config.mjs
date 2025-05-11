@@ -13,9 +13,9 @@ export default defineConfig({
     includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png'],
     manifest: {
       name: 'Kingdomino Scorer',
-      base: '/kingdomino/',
+      // base: '/kingdomino/',
       short_name: 'Kingdomino',
-      start_url: '.',
+      start_url: './',
       display: 'standalone',
       background_color: '#ffffff',
       theme_color: '#4a90e2',
