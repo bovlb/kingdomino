@@ -2,13 +2,13 @@
   import { afterUpdate } from "svelte";
 
   import { onMount, onDestroy } from "svelte";
-  import { score } from './lib/scoring';
+  import { score } from "./lib/scoring";
 
   let debugLog: string[] = [];
 
-function log(msg: string) {
-  // debugLog = [...debugLog, msg].slice(-10); // keep last 10 messages
-}
+  function log(msg: string) {
+    // debugLog = [...debugLog, msg].slice(-10); // keep last 10 messages
+  }
 
   let isDragging = false;
   let dragTerrain: Terrain | null = null;
@@ -49,7 +49,7 @@ function log(msg: string) {
 
   const gridSize = 13;
   let board: Tile[][] = Array.from({ length: gridSize }, () =>
-    Array.from({ length: gridSize }, () => ({ terrain: null, crowns: 0 })),
+    Array.from({ length: gridSize }, () => ({ terrain: null, crowns: 0 }))
   );
 
   let viewportSize = 5; // or 7
@@ -59,22 +59,21 @@ function log(msg: string) {
 
   function beginDrag(tile: Tile, row: number, col: number) {
     log(`beginDrag: ${row}, ${col}`);
-  if (isCastle(row, col)) {
-    castleDragStart = { row, col };
-  } else if (pendingCrown === null) {
-    isDragging = true;
-    dragTerrain = selectedTerrain === 'empty' ? null : selectedTerrain;
-    applyDrag(tile, row, col); // apply immediately
+    if (isCastle(row, col)) {
+      castleDragStart = { row, col };
+    } else if (pendingCrown === null) {
+      isDragging = true;
+      dragTerrain = selectedTerrain === "empty" ? null : selectedTerrain;
+      applyDrag(tile, row, col); // apply immediately
+    }
   }
-}
   function endDrag(e: PointerEvent) {
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
-  if (!el?.dataset) return;
+    if (!el?.dataset) return;
 
-  const row = parseInt(el.dataset.row ?? '');
-  const col = parseInt(el.dataset.col ?? '');
-  if (isNaN(row) || isNaN(col)) return;
-
+    const row = parseInt(el.dataset.row ?? "");
+    const col = parseInt(el.dataset.col ?? "");
+    if (isNaN(row) || isNaN(col)) return;
 
     log(`endDrag: ${row}, ${col}`);
     if (castleDragStart) {
@@ -89,7 +88,7 @@ function log(msg: string) {
 
   function tryMoveViewport(
     newCastleRow: number,
-    newCastleCol: number,
+    newCastleCol: number
   ): boolean {
     const dRow = newCastleRow - castle.row;
     const dCol = newCastleCol - castle.col;
@@ -145,18 +144,18 @@ function log(msg: string) {
   }
 
   function handlePointerMove(e: PointerEvent) {
-  if (!isDragging || dragTerrain === null) return;
+    if (!isDragging || dragTerrain === null) return;
 
-  const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
-  if (!el?.dataset) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
+    if (!el?.dataset) return;
 
-  const row = parseInt(el.dataset.row ?? '');
-  const col = parseInt(el.dataset.col ?? '');
-  if (isNaN(row) || isNaN(col)) return;
+    const row = parseInt(el.dataset.row ?? "");
+    const col = parseInt(el.dataset.col ?? "");
+    if (isNaN(row) || isNaN(col)) return;
 
-  const tile = board[row][col];
-  applyDrag(tile, row, col);
-}
+    const tile = board[row][col];
+    applyDrag(tile, row, col);
+  }
 
   function applyDrag(tile: Tile, row: number, col: number) {
     log(`applyDrag: ${row}, ${col}`);
@@ -172,23 +171,24 @@ function log(msg: string) {
 
   function setSelectedTerrain(t: string) {
     selectedTerrain = t as Terrain;
+    pendingCrown = null;
   }
   let pendingCrown: number | null = null;
 
   function applySelection(tile: Tile, row: number, col: number) {
-  if (isCastle(row, col)) return;
+    if (isCastle(row, col)) return;
 
-  if (pendingCrown !== null) {
-    console.log("applySelection: crown", pendingCrown);
-    tile.crowns = pendingCrown;
-    // pendingCrown = null;
-  } else {
-    console.log("applySelection: terrain", selectedTerrain);
-    tile.terrain = selectedTerrain === "empty" ? null : selectedTerrain;
+    if (pendingCrown !== null) {
+      console.log("applySelection: crown", pendingCrown);
+      tile.crowns = pendingCrown;
+      // pendingCrown = null;
+    } else {
+      console.log("applySelection: terrain", selectedTerrain);
+      tile.terrain = selectedTerrain === "empty" ? null : selectedTerrain;
+    }
+
+    update();
   }
-
-  update();
-}
 
   function isCastle(row: number, col: number) {
     return row === castle.row && col === castle.col;
@@ -229,7 +229,7 @@ function log(msg: string) {
         row,
         col,
       };
-    }),
+    })
   );
 
   let totalScore = 0;
@@ -281,15 +281,13 @@ function log(msg: string) {
   {#each [0, 1, 2, 3] as c}
     <button
       class:selected={pendingCrown === c}
-      on:click={() => (pendingCrown = c)}>{c} 👑</button
+      on:click={() => (pendingCrown = pendingCrown === c ? null : c)}
+      >{c} 👑</button
     >
   {/each}
 </div>
 
-<div
-  class="board"
-  style="--board-size: {viewportSize};"
->
+<div class="board" style="--board-size: {viewportSize};">
   {#each visibleTiles as vt}
     {#each vt as { tile, row, col }}
       <button
@@ -324,17 +322,18 @@ function log(msg: string) {
 </div>
 
 <p style="text-align: center; font-size: 1.2rem;">
-    Total Score: <strong>{totalScore}</strong>
-    <span style="margin-left: 1rem;">
-      {#if hasMiddleKingdom}🏰 Middle Kingdom +10{/if}
-    </span>
-    <span style="margin-left: 1rem;">
-      {#if hasHarmony}🎯 Harmony +5{/if}
-    </span>
+  Total Score: <strong>{totalScore}</strong>
+  <span style="margin-left: 1rem;">
+    {#if hasMiddleKingdom}🏰 Middle Kingdom +10{/if}
+  </span>
+  <span style="margin-left: 1rem;">
+    {#if hasHarmony}🎯 Harmony +5{/if}
+  </span>
   <button on:click={() => tryToggleViewportSize()} style="margin-left: 20px;">
     Board Size: {viewportSize}×{viewportSize}
   </button>
 </p>
+
 <!-- <div class="debug-log">
   {#each debugLog as msg}
     <div>{msg}</div>
@@ -343,17 +342,17 @@ function log(msg: string) {
 
 <style>
   .debug-log {
-  font-family: monospace;
-  font-size: 0.9rem;
-  padding: 0.5rem;
-  margin-top: 1rem;
-  border-top: 1px dashed #ccc;
-  max-height: 10rem;
-  overflow-y: auto;
-  background: #f7f7f7;
-  color: #333;
-  pointer-events: none;
-}
+    font-family: monospace;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    margin-top: 1rem;
+    border-top: 1px dashed #ccc;
+    max-height: 10rem;
+    overflow-y: auto;
+    background: #f7f7f7;
+    color: #333;
+    pointer-events: none;
+  }
 
   .board {
     touch-action: none;
@@ -369,27 +368,27 @@ function log(msg: string) {
   }
 
   .board {
-  display: grid;
-  grid-template-columns: repeat(var(--board-size), 1fr);
-  gap: 2px;
-  width: 80vw;             /* Slightly smaller than viewport */
-  /* max-width: 500px;        Optional cap for desktop */
-  margin: 0 auto;
-}
+    display: grid;
+    grid-template-columns: repeat(var(--board-size), 1fr);
+    gap: 2px;
+    width: 80vw; /* Slightly smaller than viewport */
+    /* max-width: 500px;        Optional cap for desktop */
+    margin: 0 auto;
+  }
 
-.tile {
-  aspect-ratio: 1;
-  width: 100%;
-  font-weight: bold;
-  user-select: none;
-  touch-action: manipulation;
-  border: 1px solid #ccc;
-  font-size: clamp(1rem, 3vw, 1.5rem);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-}
+  .tile {
+    aspect-ratio: 1;
+    width: 100%;
+    font-weight: bold;
+    user-select: none;
+    touch-action: manipulation;
+    border: 1px solid #ccc;
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+  }
   .grass {
     background-color: rgb(119 216 78);
   }
@@ -419,8 +418,8 @@ function log(msg: string) {
     display: flex;
     flex: 1 1 auto;
     font-size: clamp(1rem, 4vw, 1.5rem);
-  min-width: 4rem;
-  max-width: 100%;
+    min-width: 4rem;
+    max-width: 100%;
     justify-content: space-evenly;
     align-items: center;
     gap: 2rem;
@@ -430,27 +429,27 @@ function log(msg: string) {
   }
 
   .terrain-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-}
-.terrain-buttons button {
-  flex: 1 1 0;
-  min-width: 3rem;
-  max-width: 6rem;
-  font-size: clamp(0.8rem, 4vw, 1.2rem);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0.75rem 1rem;
-}
-@media (min-width: 420px) {
-  .terrain-buttons {
-    flex-wrap: nowrap;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
   }
-}
+  .terrain-buttons button {
+    flex: 1 1 0;
+    min-width: 3rem;
+    max-width: 6rem;
+    font-size: clamp(0.8rem, 4vw, 1.2rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.75rem 1rem;
+  }
+  @media (min-width: 420px) {
+    .terrain-buttons {
+      flex-wrap: nowrap;
+    }
+  }
   .crown-buttons {
     display: flex;
     flex-direction: column;
