@@ -52,8 +52,8 @@ function log(msg: string) {
     Array.from({ length: gridSize }, () => ({ terrain: null, crowns: 0 })),
   );
 
-  let viewportSize = 5; // or 7
-  let viewportOrigin = { row: 4, col: 4 }; // start at center-ish
+  let viewportSize = 7; // or 7
+  let viewportOrigin = { row: 3, col: 3 }; // start at center-ish
 
   let castle = { row: 6, col: 6 }; // always inside full grid
 
@@ -162,7 +162,7 @@ function log(msg: string) {
     log(`applyDrag: ${row}, ${col}`);
     if (isCastle(row, col)) return;
     if (isDragging && dragTerrain !== null) {
-      console.log("applyDrag: terrain", dragTerrain);
+      // console.log("applyDrag: terrain", dragTerrain);
       tile.terrain = dragTerrain;
       // tile.crowns = Math.floor(Math.random() * 4);  // <-- force visible change
       update();
@@ -179,11 +179,11 @@ function log(msg: string) {
   if (isCastle(row, col)) return;
 
   if (pendingCrown !== null) {
-    console.log("applySelection: crown", pendingCrown);
+    // console.log("applySelection: crown", pendingCrown);
     tile.crowns = pendingCrown;
-    // pendingCrown = null;
+    pendingCrown = null;
   } else {
-    console.log("applySelection: terrain", selectedTerrain);
+    // console.log("applySelection: terrain", selectedTerrain);
     tile.terrain = selectedTerrain === "empty" ? null : selectedTerrain;
   }
 
@@ -273,6 +273,7 @@ function log(msg: string) {
 
       viewportSize = 5;
     }
+    update();
   }
 </script>
 
@@ -307,6 +308,10 @@ function log(msg: string) {
         on:pointerdown={(e) => beginDrag(tile, row, col)}
         on:pointermove={(e) => handlePointerMove(e)}
         on:pointerup={(e) => endDrag(e)}
+        on:dblclick={() => {
+          tile.crowns = (tile.crowns + 1) % 4;
+          update();
+        }}
       >
         {tile.crowns > 0 ? tile.crowns : ""}
       </button>

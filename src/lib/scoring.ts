@@ -26,7 +26,7 @@ export function score(board: Tile[][], castle: Position, viewportOrigin: Positio
     harmony: boolean;
     total: number;} {
     const terrainScoreValue = terrainScore(board);
-    const middleKingdomQualifies = qualifiesMiddleKingdom(board, castle);
+    const middleKingdomQualifies = qualifiesMiddleKingdom(board, castle, viewportSize);
     const harmonyQualifies = qualifiesHarmony(board, castle, viewportOrigin, viewportSize);
     
     const total = terrainScoreValue + (middleKingdomQualifies ? 10 : 0) + (harmonyQualifies ? 5 : 0);
@@ -78,12 +78,12 @@ export function terrainScore(board: Tile[][]): number {
   return total;
 }
 
-export function qualifiesMiddleKingdom(board: Tile[][], castle: Position): boolean {
+export function qualifiesMiddleKingdom(board: Tile[][], castle: Position, viewportSize: number): boolean {
   const { minRow, maxRow, minCol, maxCol } = boundingBox(board, castle);
   const centerRow = Math.floor((minRow + maxRow) / 2);
   const centerCol = Math.floor((minCol + maxCol) / 2);
   const castleInCentre = castle.row === centerRow && castle.col === centerCol;
-  const boxFits = maxRow - minRow + 1 === 5 && maxCol - minCol + 1 === 5;
+  const boxFits = maxRow - minRow + 1 === viewportSize && maxCol - minCol + 1 === viewportSize;
   return castleInCentre && boxFits;
 }
 
